@@ -9,8 +9,24 @@ volatile unsigned int *const TIMER0_VALUE =
     (unsigned int *)0x101E2004; // Offset 0x04
 volatile unsigned int *const TIMER0_CONTROL =
     (unsigned int *)0x101E2008; // Offset 0x08
+volatile unsigned int *const TIMER0_INTCLR =
+    (unsigned int *)0x101E200C; // Offset 0x0C
+
+// Vector Interrupt Controller (VIC)
+volatile unsigned int *const VIC_BASE = (unsigned int *)0x10140000;
+volatile unsigned int *const VIC_INTENABLE =
+    (unsigned int *)0x10140010; // Offset 0x10
 
 #define TIMER_MAX_VAL 0xFFFFFFFF
+
+volatile unsigned int system_uptime = 0;
+
+extern void enable_irq(void);
+void c_irq_handler() {
+  system_uptime++;
+
+  *TIMER0_INTCLR = 1; // Clear the timer interrupt
+}
 
 void timer_init() {
   *TIMER0_CONTROL = 0;
@@ -21,6 +37,12 @@ void timer_init() {
   // Bit 1: Prescale value (1 = 32-bit, 0 = 16-bit)
   // 1000 0010 = 0x82
   *TIMER0_CONTROL = 0x82;
+}
+
+void interrupt_init() {
+  *TIMER0_LOAD = 1000000;
+  *TIMER0_CONTROL = 0xE2;
+  *VIC_INTENABLE = 1 << 4; // Enable Timer0 interrupt (bit 4)
 }
 
 unsigned int uptime() {
@@ -63,7 +85,8 @@ int strcmp(const char *s1, const char *s2) {
 }
 
 void c_entry() {
-  timer_init();
+  interrupt_init();
+  enable_irq();
   char c;
   char cmd_buf[15];
   unsigned int buf_idx = 0;
@@ -87,8 +110,7 @@ void c_entry() {
           print_uart0("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
         } else if (strcmp(cmd_buf, "uptime") == 0) {
           print_uart0("Uptime: ");
-          unsigned int up = uptime();
-          print_dec(up);
+          print_dec(system_uptime);
           print_uart0(" seconds\n");
         } else {
           print_uart0("Unknown command: ");
