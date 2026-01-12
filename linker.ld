@@ -15,6 +15,8 @@ SECTIONS
         __bss_end = .;
     }
     /* Stack */
+    /* If the address is not 8-byte aligned, The Program may crash. */
+    /* So, we need to align the address to 8 bytes. */
     . = ALIGN(8);
     . = . + 0x1000;
     . = ALIGN(8);
