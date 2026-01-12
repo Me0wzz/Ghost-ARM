@@ -2,7 +2,5 @@
 _Reset:
     LDR sp, =stack_top // Initialize stack pointer
     BL c_entry // Call main entry point
-stop:
-    B stop  // Infinite loop
-
+    B . // Infinite loop after main returns
 
