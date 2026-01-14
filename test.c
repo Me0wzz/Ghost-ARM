@@ -17,6 +17,7 @@ volatile unsigned int *const VIC_BASE = (unsigned int *)0x10140000;
 volatile unsigned int *const VIC_INTENABLE =
     (unsigned int *)0x10140010; // Offset 0x10
 
+volatile unsigned int system_uptime = 0;
 #define TIMER_MAX_VAL 0xFFFFFFFF
 
 typedef struct {
@@ -47,6 +48,7 @@ typedef struct {
 tcb_t initial_task;
 tcb_t task1;
 tcb_t task2;
+tcb_t shell_task;
 tcb_t *current_task;
 
 void task1_func() {
@@ -62,6 +64,57 @@ void task2_func() {
     print_uart0("Task 2");
     for (volatile int i = 0; i < 1000000; i++)
       ;
+  }
+}
+
+void shell_func() {
+  char c;
+  char cmd_buf[15];
+  unsigned int buf_idx = 0;
+  print_uart0("Shell> ");
+  while (1) {
+    if ((*UART0FR & 0x10) == 0) {
+      c = (char)(*UART0DR);
+      if (c == '\r') {
+        print_uart0("\n");
+        cmd_buf[buf_idx] = '\0';
+        if (buf_idx == 0) {
+        } else if (strcmp(cmd_buf, "help") == 0) {
+          print_uart0("Available commands:\n");
+          print_uart0("help - Show this message\n");
+          print_uart0("whoami - Show the current user\n");
+          print_uart0("clear - Clear the screen\n");
+          print_uart0("uptime - Show system uptime\n");
+        } else if (strcmp(cmd_buf, "whoami") == 0) {
+          print_uart0("You are user 'ghost'\n");
+        } else if (strcmp(cmd_buf, "clear") == 0) {
+          print_uart0("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+        } else if (strcmp(cmd_buf, "uptime") == 0) {
+          print_uart0("Uptime: ");
+          print_dec(system_uptime);
+          print_uart0(" seconds\n");
+        } else {
+          print_uart0("Unknown command: ");
+          print_uart0(cmd_buf);
+          print_uart0("\n");
+        }
+        buf_idx = 0;
+        print_uart0("Shell> ");
+      } else if (c == 127 || c == 8) {
+        if (buf_idx > 0) {
+          buf_idx--;
+          putc_uart0('\b');
+          putc_uart0(' ');
+          putc_uart0('\b');
+        }
+      } else {
+        if (buf_idx < sizeof(cmd_buf) - 1) {
+          cmd_buf[buf_idx] = c;
+          buf_idx++;
+          *UART0DR = (unsigned int)c; // Echo back
+        }
+      }
+    }
   }
 }
 
@@ -85,17 +138,19 @@ void task_init(tcb_t *task, void (*func)(), int id) {
 void init_multitasking() {
   task_init(&task1, task1_func, 1);
   task_init(&task2, task2_func, 2);
+  task_init(&shell_task, shell_func, 0);
+  current_task = &initial_task;
 }
 
 void schedule() {
   if (current_task == &task1) {
     current_task = &task2;
+  } else if (current_task == &task2) {
+    current_task = &shell_task;
   } else {
     current_task = &task1;
   }
 }
-
-volatile unsigned int system_uptime = 0;
 
 extern void enable_irq(void);
 void c_irq_handler() {
@@ -164,52 +219,6 @@ void c_entry() {
   interrupt_init();
   enable_irq();
   init_multitasking();
-  char c;
-  char cmd_buf[15];
-  unsigned int buf_idx = 0;
-  print_uart0("Shell> ");
-  while (1) {
-    if ((*UART0FR & 0x10) == 0) {
-      c = (char)(*UART0DR);
-      if (c == '\r') {
-        print_uart0("\n");
-        cmd_buf[buf_idx] = '\0';
-        if (buf_idx == 0) {
-        } else if (strcmp(cmd_buf, "help") == 0) {
-          print_uart0("Available commands:\n");
-          print_uart0("help - Show this message\n");
-          print_uart0("whoami - Show the current user\n");
-          print_uart0("clear - Clear the screen\n");
-          print_uart0("uptime - Show system uptime\n");
-        } else if (strcmp(cmd_buf, "whoami") == 0) {
-          print_uart0("You are user 'ghost'\n");
-        } else if (strcmp(cmd_buf, "clear") == 0) {
-          print_uart0("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
-        } else if (strcmp(cmd_buf, "uptime") == 0) {
-          print_uart0("Uptime: ");
-          print_dec(system_uptime);
-          print_uart0(" seconds\n");
-        } else {
-          print_uart0("Unknown command: ");
-          print_uart0(cmd_buf);
-          print_uart0("\n");
-        }
-        buf_idx = 0;
-        print_uart0("Shell> ");
-      } else if (c == 127 || c == 8) {
-        if (buf_idx > 0) {
-          buf_idx--;
-          putc_uart0('\b');
-          putc_uart0(' ');
-          putc_uart0('\b');
-        }
-      } else {
-        if (buf_idx < sizeof(cmd_buf) - 1) {
-          cmd_buf[buf_idx] = c;
-          buf_idx++;
-          *UART0DR = (unsigned int)c; // Echo back
-        }
-      }
-    }
-  }
+  while (1)
+    ;
 }
