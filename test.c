@@ -23,6 +23,7 @@ volatile unsigned int system_uptime = 0;
 #define HIGH_PRIORITY 10
 #define STATE_DEAD 0
 #define STATE_READY 1
+#define STATE_WAIT 2
 
 typedef struct {
   unsigned int r0;
@@ -135,6 +136,8 @@ void shell_func() {
               safe_print("READY");
             else if (task->state == STATE_DEAD)
               safe_print("DEAD");
+            else if (task->state == STATE_WAIT)
+              safe_print("WAIT");
             else
               safe_print("UNKNOWN");
             safe_print("\n");
@@ -152,6 +155,69 @@ void shell_func() {
               } else {
                 task_list[i]->state = STATE_DEAD;
                 safe_print("Killed process with PID: ");
+                safe_print_dec(target_pid);
+                safe_print("\n");
+              }
+              found = 1;
+              break;
+            }
+          }
+          if (!found) {
+            safe_print("No such process with PID: ");
+            safe_print_dec(target_pid);
+            safe_print("\n");
+          }
+        } else if (cmd_buf[0] == 's' && cmd_buf[1] == 't' &&
+                   cmd_buf[2] == 'o' && cmd_buf[3] == 'p') {
+          int target_pid = atoi(&cmd_buf[5]);
+          int found = 0;
+
+          for (int i = 0; i < task_cnt; i++) {
+            if (task_list[i]->pid == target_pid) {
+              if (target_pid == 0) {
+                safe_print("Cannot stop shell \n");
+              } else if (task_list[i]->state == STATE_DEAD) {
+                safe_print("Cannot pause a dead process with PID: ");
+                safe_print_dec(target_pid);
+                safe_print("\n");
+              } else if (task_list[i]->state == STATE_WAIT) {
+                safe_print("Process with PID: ");
+                safe_print_dec(target_pid);
+                safe_print(" is already paused\n");
+              } else {
+                task_list[i]->state = STATE_WAIT;
+                safe_print("Paused process with PID: ");
+                safe_print_dec(target_pid);
+                safe_print("\n");
+              }
+              found = 1;
+              break;
+            }
+          }
+          if (!found) {
+            safe_print("No such process with PID: ");
+            safe_print_dec(target_pid);
+            safe_print("\n");
+          }
+        } else if (cmd_buf[0] == 'r' && cmd_buf[1] == 'e' &&
+                   cmd_buf[2] == 's' && cmd_buf[3] == 'u' &&
+                   cmd_buf[4] == 'm' && cmd_buf[5] == 'e') {
+          int target_pid = atoi(&cmd_buf[7]);
+          int found = 0;
+
+          for (int i = 0; i < task_cnt; i++) {
+            if (task_list[i]->pid == target_pid) {
+              if (task_list[i]->state == STATE_DEAD) {
+                safe_print("Cannot resume a dead process with PID: ");
+                safe_print_dec(target_pid);
+                safe_print("\n");
+              } else if (task_list[i]->state == STATE_READY) {
+                safe_print("Process with PID: ");
+                safe_print_dec(target_pid);
+                safe_print(" is already running\n");
+              } else {
+                task_list[i]->state = STATE_READY;
+                safe_print("Resumed process with PID: ");
                 safe_print_dec(target_pid);
                 safe_print("\n");
               }
