@@ -36,7 +36,14 @@ copy_loop:
 irq_handler:
     SUB lr, lr, #4 // Return address correction
     STMFD sp!, {r0-r12, lr} // Save registers
+    LDR r0, =current_task
+    LDR r1, [r0]
+    STR sp, [r1, #52]
     BL c_irq_handler // Call C IRQ handler
+    BL schedule
+    LDR r0, =current_task
+    LDR r1, [r0]
+    LDR sp, [r1, #52]
     LDMFD sp!, {r0-r12, pc}^ // Restore registers and return
 
 undefined_handler:

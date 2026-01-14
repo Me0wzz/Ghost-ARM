@@ -19,6 +19,82 @@ volatile unsigned int *const VIC_INTENABLE =
 
 #define TIMER_MAX_VAL 0xFFFFFFFF
 
+typedef struct {
+  unsigned int r0;
+  unsigned int r1;
+  unsigned int r2;
+  unsigned int r3;
+  unsigned int r4;
+  unsigned int r5;
+  unsigned int r6;
+  unsigned int r7;
+  unsigned int r8;
+  unsigned int r9;
+  unsigned int r10;
+  unsigned int r11;
+  unsigned int r12;
+  unsigned int sp;
+  unsigned int lr;
+  unsigned int pc;
+  unsigned int cpsr;
+} context_t;
+
+typedef struct {
+  context_t context;
+  unsigned int pid;
+  unsigned int stack[1024];
+} tcb_t;
+tcb_t initial_task;
+tcb_t task1;
+tcb_t task2;
+tcb_t *current_task;
+
+void task1_func() {
+  while (1) {
+    print_uart0("Task 1");
+    for (volatile int i = 0; i < 1000000; i++)
+      ;
+  }
+}
+
+void task2_func() {
+  while (1) {
+    print_uart0("Task 2");
+    for (volatile int i = 0; i < 1000000; i++)
+      ;
+  }
+}
+
+void task_init(tcb_t *task, void (*func)(), int id) {
+  task->pid = id;
+  unsigned int *sp = task->stack + 1024;
+  task->context.pc = (unsigned int)func;
+  task->context.sp = (unsigned int)&(task->stack[1024]);
+  task->context.cpsr = 0x60000013; // SVC mode
+  sp--;
+  *sp = (unsigned int)func;
+  for (int i = 0; i < 13; i++) {
+    sp--;
+    *sp = 0;
+  }
+
+  // 2. 최종 스택 포인터(SP)를 TCB에 저장
+  task->context.sp = (unsigned int)sp;
+}
+
+void init_multitasking() {
+  task_init(&task1, task1_func, 1);
+  task_init(&task2, task2_func, 2);
+}
+
+void schedule() {
+  if (current_task == &task1) {
+    current_task = &task2;
+  } else {
+    current_task = &task1;
+  }
+}
+
 volatile unsigned int system_uptime = 0;
 
 extern void enable_irq(void);
@@ -87,6 +163,7 @@ int strcmp(const char *s1, const char *s2) {
 void c_entry() {
   interrupt_init();
   enable_irq();
+  init_multitasking();
   char c;
   char cmd_buf[15];
   unsigned int buf_idx = 0;
