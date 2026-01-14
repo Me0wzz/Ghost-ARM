@@ -21,6 +21,8 @@ volatile unsigned int system_uptime = 0;
 #define TIMER_MAX_VAL 0xFFFFFFFF
 #define LOW_PRIORITY 1
 #define HIGH_PRIORITY 10
+#define STATE_DEAD 0
+#define STATE_READY 1
 
 typedef struct {
   unsigned int r0;
@@ -48,12 +50,30 @@ typedef struct {
   unsigned int stack[4096];
   unsigned int priority;
   unsigned int quantum;
+
+  unsigned int state; // 0: DEAD, 1: READY
 } tcb_t;
 tcb_t initial_task;
 tcb_t task1;
 tcb_t task2;
 tcb_t shell_task;
 tcb_t *current_task;
+tcb_t *task_list[3];
+int task_cnt = 3;
+
+int atoi(const char *str) {
+  int result = 0;
+  int sign = 1;
+  if (*str == '-') {
+    sign = -1;
+    str++;
+  }
+  while (*str >= '0' && *str <= '9') {
+    result = result * 10 + (*str - '0');
+    str++;
+  }
+  return sign * result;
+}
 
 void task1_func() {
   while (1) {
@@ -89,6 +109,8 @@ void shell_func() {
           safe_print("whoami - Show the current user\n");
           safe_print("clear - Clear the screen\n");
           safe_print("uptime - Show system uptime\n");
+          safe_print("jobs - List running tasks\n");
+          safe_print("kill <pid> - Kill a task by PID\n");
         } else if (strcmp(cmd_buf, "whoami") == 0) {
           safe_print("You are user 'ghost'\n");
         } else if (strcmp(cmd_buf, "clear") == 0) {
@@ -97,7 +119,54 @@ void shell_func() {
           safe_print("Uptime: ");
           safe_print_dec(system_uptime / 100);
           safe_print(" seconds\n");
-        } else {
+        } else if (strcmp(cmd_buf, "jobs") == 0) {
+          safe_print("Running tasks:\n");
+          for (int i = 0; i < task_cnt; i++) {
+            tcb_t *task = task_list[i];
+            safe_print("PID: ");
+            safe_print_dec(task->pid);
+            safe_print("    ");
+            safe_print("Priority: ");
+            safe_print_dec(task->priority);
+
+            safe_print("    ");
+            safe_print("State: ");
+            if (task->state == STATE_READY)
+              safe_print("READY");
+            else if (task->state == STATE_DEAD)
+              safe_print("DEAD");
+            else
+              safe_print("UNKNOWN");
+            safe_print("\n");
+          }
+
+        } else if (cmd_buf[0] == 'k' && cmd_buf[1] == 'i' &&
+                   cmd_buf[2] == 'l' && cmd_buf[3] == 'l') {
+          int target_pid = atoi(&cmd_buf[5]);
+          int found = 0;
+
+          for (int i = 0; i < task_cnt; i++) {
+            if (task_list[i]->pid == target_pid) {
+              if (target_pid == 0) {
+                safe_print("Cannot kill shell \n");
+              } else {
+                task_list[i]->state = STATE_DEAD;
+                safe_print("Killed process with PID: ");
+                safe_print_dec(target_pid);
+                safe_print("\n");
+              }
+              found = 1;
+              break;
+            }
+          }
+          if (!found) {
+            safe_print("No such process with PID: ");
+            safe_print_dec(target_pid);
+            safe_print("\n");
+          }
+        }
+
+        else {
           safe_print("Unknown command: ");
           safe_print(cmd_buf);
           safe_print("\n");
@@ -130,6 +199,7 @@ void task_init(tcb_t *task, void (*func)(), int id, int prior) {
   task->pid = id;
   task->priority = prior;
   task->quantum = prior;
+  task->state = STATE_READY;
   unsigned int *sp = task->stack + 4096;
   task->context.pc = (unsigned int)func;
   task->context.sp = (unsigned int)&(task->stack[4096]);
@@ -149,23 +219,40 @@ void init_multitasking() {
   task_init(&task1, task1_func, 1, LOW_PRIORITY);
   task_init(&task2, task2_func, 2, LOW_PRIORITY);
   task_init(&shell_task, shell_func, 0, HIGH_PRIORITY);
+  task_list[0] = &task1;
+  task_list[1] = &task2;
+  task_list[2] = &shell_task;
   current_task = &initial_task;
 }
 
 void schedule() {
   if (current_task != &initial_task) {
-    if (current_task->quantum > 0) {
+    if (current_task->quantum > 0 && current_task->state == STATE_READY) {
       current_task->quantum--;
       return;
     }
     current_task->quantum = current_task->priority;
   }
-  if (current_task == &task1) {
-    current_task = &task2;
-  } else if (current_task == &task2) {
-    current_task = &shell_task;
-  } else {
-    current_task = &task1;
+  int next_idx = -1;
+  int current_idx = 0;
+  for (int i = 0; i < task_cnt; i++) {
+    if (task_list[i] == current_task) {
+      current_idx = i;
+      break;
+    }
+  }
+  for (int i = 1; i <= task_cnt; i++) {
+    int idx = current_idx + i;
+    if (idx >= task_cnt) {
+      idx = idx - task_cnt;
+    }
+    if (task_list[idx]->state == STATE_READY) {
+      next_idx = idx;
+      break;
+    }
+  }
+  if (next_idx != -1) {
+    current_task = task_list[next_idx];
   }
 }
 
