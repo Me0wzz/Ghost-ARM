@@ -53,6 +53,11 @@ void task_init(tcb_t *task, void (*func)(), int id, int prior);
 // shell.c
 void shell_func();
 
+// mm.c
+void mm_init();
+void *malloc(unsigned int size);
+void free(void *ptr);
+
 // ASM functions
 extern void enable_irq(void);
 extern void disable_irq(void);

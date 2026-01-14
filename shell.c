@@ -30,6 +30,48 @@ void shell_func() {
           safe_print("Uptime: ");
           safe_print_dec(system_uptime / 100);
           safe_print(" seconds\n");
+        } else if (strcmp(cmd_buf, "memtest") == 0) {
+          safe_print("Allocating Memory...\n");
+          char *mem1 = (char *)malloc(100);
+          char *mem2 = (char *)malloc(200);
+          char *mem3 = (char *)malloc(400);
+          if (mem1 == 0 || mem2 == 0 || mem3 == 0) {
+            safe_print("Memory allocation failed!\n");
+          } else {
+            safe_print("Allocated 256 bytes at: ");
+            safe_print_dec((unsigned int)mem1);
+            safe_print("\nAllocated 512 bytes at: ");
+            safe_print_dec((unsigned int)mem2);
+            safe_print("\nAllocated 1024 bytes at: ");
+            safe_print_dec((unsigned int)mem3);
+            safe_print("\n");
+            mem1[0] = 'H';
+            mem1[1] = 'i';
+            mem1[2] = '\0';
+            mem2[0] = 'G';
+            mem2[1] = 'h';
+            mem2[2] = 'o';
+            mem2[3] = 's';
+            mem2[4] = 't';
+            mem2[5] = '\0';
+            mem3[0] = 'O';
+            mem3[1] = 'S';
+            mem3[2] = '\0';
+            safe_print("mem1 content: ");
+            safe_print(mem1);
+            safe_print("\n");
+            safe_print("mem2 content: ");
+            safe_print(mem2);
+            safe_print("\n");
+            safe_print("mem3 content: ");
+            safe_print(mem3);
+            safe_print("\n");
+            free(mem1);
+            free(mem2);
+            free(mem3);
+            safe_print("Memory freed.\n");
+          }
+
         } else if (strcmp(cmd_buf, "jobs") == 0) {
           safe_print("Running tasks:\n");
           for (int i = 0; i < task_cnt; i++) {

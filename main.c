@@ -30,6 +30,7 @@ void hw_init() {
 
 void c_entry() {
   hw_init();
+  mm_init();
   task_init(&task1, task1_func, 1, LOW_PRIORITY);
   task_init(&task2, task2_func, 2, LOW_PRIORITY);
   task_init(&shell_task, shell_func, 0, HIGH_PRIORITY);
