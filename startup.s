@@ -1,5 +1,6 @@
 .global _Reset
 .global enable_irq
+.global disable_irq
 .equ MODE_FIQ, 0xD1
 .equ MODE_IRQ, 0xD2 // Interrupt mode
 .equ MODE_SVC, 0xD3 // Supervisor mode
@@ -62,5 +63,11 @@ fiq_handler:
 enable_irq:
     MRS r0, cpsr
     BIC r0, r0, #0x80
+    MSR cpsr_c, r0
+    MOV pc, lr
+
+disable_irq:
+    MRS r0, cpsr
+    ORR r0, r0, #0x80
     MSR cpsr_c, r0
     MOV pc, lr

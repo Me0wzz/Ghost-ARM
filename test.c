@@ -53,7 +53,7 @@ tcb_t *current_task;
 
 void task1_func() {
   while (1) {
-    print_uart0("Task 1");
+    // safe_print("Task 1");
     for (volatile int i = 0; i < 1000000; i++)
       ;
   }
@@ -61,7 +61,7 @@ void task1_func() {
 
 void task2_func() {
   while (1) {
-    print_uart0("Task 2");
+    // safe_print("Task 2");
     for (volatile int i = 0; i < 1000000; i++)
       ;
   }
@@ -71,47 +71,51 @@ void shell_func() {
   char c;
   char cmd_buf[15];
   unsigned int buf_idx = 0;
-  print_uart0("Shell> ");
+  safe_print("Shell> ");
   while (1) {
     if ((*UART0FR & 0x10) == 0) {
       c = (char)(*UART0DR);
       if (c == '\r') {
-        print_uart0("\n");
+        safe_print("\n");
         cmd_buf[buf_idx] = '\0';
         if (buf_idx == 0) {
         } else if (strcmp(cmd_buf, "help") == 0) {
-          print_uart0("Available commands:\n");
-          print_uart0("help - Show this message\n");
-          print_uart0("whoami - Show the current user\n");
-          print_uart0("clear - Clear the screen\n");
-          print_uart0("uptime - Show system uptime\n");
+          safe_print("Available commands:\n");
+          safe_print("help - Show this message\n");
+          safe_print("whoami - Show the current user\n");
+          safe_print("clear - Clear the screen\n");
+          safe_print("uptime - Show system uptime\n");
         } else if (strcmp(cmd_buf, "whoami") == 0) {
-          print_uart0("You are user 'ghost'\n");
+          safe_print("You are user 'ghost'\n");
         } else if (strcmp(cmd_buf, "clear") == 0) {
-          print_uart0("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+          safe_print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
         } else if (strcmp(cmd_buf, "uptime") == 0) {
-          print_uart0("Uptime: ");
-          print_dec(system_uptime);
-          print_uart0(" seconds\n");
+          safe_print("Uptime: ");
+          safe_print_dec(system_uptime);
+          safe_print(" seconds\n");
         } else {
-          print_uart0("Unknown command: ");
-          print_uart0(cmd_buf);
-          print_uart0("\n");
+          safe_print("Unknown command: ");
+          safe_print(cmd_buf);
+          safe_print("\n");
         }
         buf_idx = 0;
-        print_uart0("Shell> ");
+        safe_print("Shell> ");
       } else if (c == 127 || c == 8) {
         if (buf_idx > 0) {
           buf_idx--;
+          disable_irq();
           putc_uart0('\b');
           putc_uart0(' ');
           putc_uart0('\b');
+          enable_irq();
         }
       } else {
         if (buf_idx < sizeof(cmd_buf) - 1) {
           cmd_buf[buf_idx] = c;
+          disable_irq();
           buf_idx++;
           *UART0DR = (unsigned int)c; // Echo back
+          enable_irq();
         }
       }
     }
@@ -153,6 +157,8 @@ void schedule() {
 }
 
 extern void enable_irq(void);
+extern void disable_irq(void);
+
 void c_irq_handler() {
   system_uptime++;
 
@@ -207,6 +213,32 @@ void print_dec(unsigned int num) {
   }
 }
 
+void safe_print(const char *s) {
+  disable_irq();
+  while (*s != '\0') {
+    *UART0DR = (unsigned int)(*s++);
+  }
+  enable_irq();
+}
+
+void safe_print_dec(unsigned int num) {
+  disable_irq();
+  if (num == 0) {
+    *UART0DR = (unsigned int)'0';
+    enable_irq();
+    return;
+  }
+  char buf[16];
+  int i = 0;
+  while (num > 0) {
+    buf[i++] = (num % 10) + '0';
+    num /= 10;
+  }
+  for (int j = i - 1; j >= 0; j--)
+    *UART0DR = (unsigned int)buf[j];
+  enable_irq();
+}
+
 int strcmp(const char *s1, const char *s2) {
   while (*s1 != '\0' && (*s1 == *s2)) {
     s1++;
@@ -217,8 +249,9 @@ int strcmp(const char *s1, const char *s2) {
 
 void c_entry() {
   interrupt_init();
-  enable_irq();
   init_multitasking();
+
+  enable_irq();
   while (1)
     ;
 }
