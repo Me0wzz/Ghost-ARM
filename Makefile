@@ -5,7 +5,7 @@ OBJCOPY = arm-none-eabi-objcopy
 CFLAGS = -g -mcpu=arm926ej-s -ffreestanding -Wall -Wextra
 LDFLAGS = -T linker.ld
 
-OBJS = startup.o test.o
+OBJS = startup.o kernel.o shell.o lib.o main.o
 TARGET = ghost-arm
 
 all: $(TARGET).bin
