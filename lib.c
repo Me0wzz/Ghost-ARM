@@ -1,5 +1,6 @@
 #include "ghost.h"
 
+/*
 int atoi(const char *str) {
   int result = 0;
   int sign = 1;
@@ -12,6 +13,16 @@ int atoi(const char *str) {
     str++;
   }
   return sign * result;
+}
+*/
+
+unsigned int atoi(const char *str) {
+  unsigned int result = 0;
+  while (*str >= '0' && *str <= '9') {
+    result = result * 10 + (*str - '0');
+    str++;
+  }
+  return result;
 }
 
 int strcmp(const char *s1, const char *s2) {

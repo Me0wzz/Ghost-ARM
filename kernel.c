@@ -14,7 +14,7 @@ void task_init(tcb_t *task, void (*func)(), int id, int prior) {
   task->priority = prior;
   task->quantum = prior;
   task->state = STATE_READY;
-
+  task->wake_at = 0;
   unsigned int *sp = task->stack + 4096;
   task->context.pc = (unsigned int)func;
   task->context.sp = (unsigned int)&(task->stack[4096]);
@@ -29,7 +29,25 @@ void task_init(tcb_t *task, void (*func)(), int id, int prior) {
   task->context.sp = (unsigned int)sp;
 }
 
+void sleep(unsigned int seconds) {
+  tcb_t *t = current_task;
+  unsigned int tick = seconds * 100; // 1 tick = 10ms
+  t->wake_at = system_uptime + tick;
+  t->state = STATE_WAIT;
+  t->quantum = 0;
+  while (t->state == STATE_WAIT)
+    ;
+}
+
 void schedule() {
+  for (int i = 0; i < task_cnt; i++) {
+    if (task_list[i]->state == STATE_WAIT && task_list[i]->wake_at > 0) {
+      if (system_uptime >= task_list[i]->wake_at) {
+        task_list[i]->state = STATE_READY;
+        task_list[i]->wake_at = 0;
+      }
+    }
+  }
   if (current_task != &initial_task) {
     if (current_task->quantum > 0 && current_task->state == STATE_READY) {
       current_task->quantum--;

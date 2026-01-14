@@ -28,6 +28,7 @@ typedef struct {
   unsigned int priority;
   unsigned int quantum;
   unsigned int state;
+  unsigned int wake_at;
 } tcb_t;
 
 extern volatile unsigned int system_uptime;
@@ -37,7 +38,7 @@ extern tcb_t *current_task;
 extern tcb_t initial_task;
 
 // lib.c
-int atoi(const char *str);
+unsigned int atoi(const char *str);
 int strcmp(const char *s1, const char *s2);
 void safe_print(const char *s);
 void safe_print_dec(unsigned int num);
@@ -46,7 +47,7 @@ void putc_uart0(char c);
 // kernel.c
 void init_multitasking();
 void schedule();
-void sleep(unsigned int seconds); // TODO
+void sleep(unsigned int seconds);
 void task_init(tcb_t *task, void (*func)(), int id, int prior);
 
 // shell.c

@@ -140,9 +140,17 @@ void shell_func() {
             safe_print_dec(target_pid);
             safe_print("\n");
           }
-        }
+        } else if (cmd_buf[0] == 's' && cmd_buf[1] == 'l' &&
+                   cmd_buf[2] == 'e' && cmd_buf[3] == 'e' &&
+                   cmd_buf[4] == 'p') {
+          int sec = atoi(&cmd_buf[6]);
+          safe_print("Sleeping for ");
+          safe_print_dec(sec);
+          safe_print(" seconds...\n");
+          sleep(sec);
+          safe_print("Awake!\n");
 
-        else {
+        } else {
           safe_print("Unknown command: ");
           safe_print(cmd_buf);
           safe_print("\n");
