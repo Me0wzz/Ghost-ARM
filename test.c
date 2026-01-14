@@ -19,6 +19,8 @@ volatile unsigned int *const VIC_INTENABLE =
 
 volatile unsigned int system_uptime = 0;
 #define TIMER_MAX_VAL 0xFFFFFFFF
+#define LOW_PRIORITY 1
+#define HIGH_PRIORITY 10
 
 typedef struct {
   unsigned int r0;
@@ -43,7 +45,9 @@ typedef struct {
 typedef struct {
   context_t context;
   unsigned int pid;
-  unsigned int stack[1024];
+  unsigned int stack[4096];
+  unsigned int priority;
+  unsigned int quantum;
 } tcb_t;
 tcb_t initial_task;
 tcb_t task1;
@@ -91,7 +95,7 @@ void shell_func() {
           safe_print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
         } else if (strcmp(cmd_buf, "uptime") == 0) {
           safe_print("Uptime: ");
-          safe_print_dec(system_uptime);
+          safe_print_dec(system_uptime / 100);
           safe_print(" seconds\n");
         } else {
           safe_print("Unknown command: ");
@@ -122,11 +126,13 @@ void shell_func() {
   }
 }
 
-void task_init(tcb_t *task, void (*func)(), int id) {
+void task_init(tcb_t *task, void (*func)(), int id, int prior) {
   task->pid = id;
-  unsigned int *sp = task->stack + 1024;
+  task->priority = prior;
+  task->quantum = prior;
+  unsigned int *sp = task->stack + 4096;
   task->context.pc = (unsigned int)func;
-  task->context.sp = (unsigned int)&(task->stack[1024]);
+  task->context.sp = (unsigned int)&(task->stack[4096]);
   task->context.cpsr = 0x60000013; // SVC mode
   sp--;
   *sp = (unsigned int)func;
@@ -140,13 +146,20 @@ void task_init(tcb_t *task, void (*func)(), int id) {
 }
 
 void init_multitasking() {
-  task_init(&task1, task1_func, 1);
-  task_init(&task2, task2_func, 2);
-  task_init(&shell_task, shell_func, 0);
+  task_init(&task1, task1_func, 1, LOW_PRIORITY);
+  task_init(&task2, task2_func, 2, LOW_PRIORITY);
+  task_init(&shell_task, shell_func, 0, HIGH_PRIORITY);
   current_task = &initial_task;
 }
 
 void schedule() {
+  if (current_task != &initial_task) {
+    if (current_task->quantum > 0) {
+      current_task->quantum--;
+      return;
+    }
+    current_task->quantum = current_task->priority;
+  }
   if (current_task == &task1) {
     current_task = &task2;
   } else if (current_task == &task2) {
@@ -165,6 +178,22 @@ void c_irq_handler() {
   *TIMER0_INTCLR = 1; // Clear the timer interrupt
 }
 
+void c_undefined_handler() {
+  safe_print("Undefined Instruction Exception!\n");
+  while (1)
+    ;
+}
+void c_prefetch_handler() {
+  safe_print("Prefetch Abort Exception!\n");
+  while (1)
+    ;
+}
+void c_data_handler() {
+  safe_print("Data Abort Exception!\n");
+  while (1)
+    ;
+}
+
 void timer_init() {
   *TIMER0_CONTROL = 0;
 
@@ -177,7 +206,7 @@ void timer_init() {
 }
 
 void interrupt_init() {
-  *TIMER0_LOAD = 1000000;
+  *TIMER0_LOAD = 10000;
   *TIMER0_CONTROL = 0xE2;
   *VIC_INTENABLE = 1 << 4; // Enable Timer0 interrupt (bit 4)
 }

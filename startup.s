@@ -48,12 +48,18 @@ irq_handler:
     LDMFD sp!, {r0-r12, pc}^ // Restore registers and return
 
 undefined_handler:
+    STMFD sp!, {r0-r12, lr}
+    BL c_undefined_handler
     B .
 swi_handler:
     B .
 prefetch_handler:
+    STMFD sp!, {r0-r12, lr}
+    BL c_prefetch_handler
     B .
 data_handler:
+    STMFD sp!, {r0-r12, lr}
+    BL c_data_handler
     B .
 unused_handler:
     B .
