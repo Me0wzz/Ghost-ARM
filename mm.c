@@ -2,6 +2,8 @@
 
 #define HEAP_ADDR ((void *)0x300000)
 
+#define ALIGN4(x) (((x) + 3) & ~3)
+
 typedef struct mem_block {
   struct mem_block *next;
   unsigned int size;
@@ -19,6 +21,9 @@ void mm_init() {
 }
 
 void *malloc(unsigned int size) {
+  if (size == 0)
+    return NULL;       // Ignore zero size requests
+  size = ALIGN4(size); // Align size to 4 bytes
   mem_block_t *curr = head;
   while (curr != (void *)0) {
     if (curr->is_free && curr->size >= size) {

@@ -4,7 +4,7 @@ volatile unsigned int system_uptime = 0;
 
 tcb_t initial_task;
 tcb_t *current_task;
-tcb_t *task_list[3];
+tcb_t *task_list[MAX_TASKS];
 int task_cnt = 3;
 
 volatile unsigned int *const TIMER0_INTCLR = (unsigned int *)0x101E200C;
@@ -15,9 +15,9 @@ void task_init(tcb_t *task, void (*func)(), int id, int prior) {
   task->quantum = prior;
   task->state = STATE_READY;
   task->wake_at = 0;
-  unsigned int *sp = task->stack + 4096;
+  unsigned int *sp = task->stack + STACK_SIZE;
   task->context.pc = (unsigned int)func;
-  task->context.sp = (unsigned int)&(task->stack[4096]);
+  task->context.sp = (unsigned int)&(task->stack[STACK_SIZE]);
   task->context.cpsr = 0x60000013; // SVC mode
 
   sp--;
@@ -27,6 +27,55 @@ void task_init(tcb_t *task, void (*func)(), int id, int prior) {
     *sp = 0;
   }
   task->context.sp = (unsigned int)sp;
+}
+
+int task_create(void (*entry)(), int priority) {
+  disable_irq();
+  int slot_idx = -1;
+  for (int i = 0; i < MAX_TASKS; i++) {
+    if (task_list[i] != NULL && task_list[i]->state == STATE_DEAD) {
+      slot_idx = i;
+      break;
+    }
+  }
+  if (slot_idx == -1) {
+    for (int i = 0; i < MAX_TASKS; i++) {
+      if (task_list[i] == NULL) {
+        slot_idx = i;
+        break;
+      }
+    }
+  }
+  if (slot_idx == -1)
+    return -1;
+  tcb_t *new_task = (tcb_t *)malloc(sizeof(tcb_t));
+  if (new_task == NULL)
+    return -2;
+  unsigned int *stack_top = &new_task->stack[STACK_SIZE];
+  stack_top--;
+  *stack_top = (unsigned int)entry;
+
+  // (2) R0 ~ R12 레지스터 저장 (0으로 초기화)
+  for (int i = 0; i < 13; i++) {
+    stack_top--;
+    *stack_top = 0;
+  }
+  new_task->context.sp = (unsigned int)stack_top;
+  new_task->context.pc = (unsigned int)entry;
+  new_task->context.cpsr = 0x13; // SVC
+  new_task->context.lr = (unsigned int)entry;
+
+  new_task->pid = task_cnt + 1;
+  new_task->priority = priority;
+  new_task->quantum = priority;
+  new_task->state = STATE_READY;
+  new_task->wake_at = 0;
+
+  task_list[slot_idx] = new_task;
+  if (slot_idx >= task_cnt)
+    task_cnt = slot_idx + 1;
+  enable_irq();
+  return new_task->pid;
 }
 
 void sleep(unsigned int seconds) {
