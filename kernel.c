@@ -161,7 +161,7 @@ void c_data_handler() {
     ;
 }
 
-void fs_init() {
+void ram_fs_init() {
   for (int i = 0; i < MAX_FILENAME_LEN; i++) {
     ramdisk[i].used = 0;
     ramdisk[i].value = 0;
@@ -170,7 +170,7 @@ void fs_init() {
   }
 }
 
-void fs_write(char *name, int val) {
+void ram_fs_write(char *name, int val) {
   for (int i = 0; i < MAX_FILES; i++) {
     if (ramdisk[i].used && strcmp(ramdisk[i].name, name) == 0) {
       ramdisk[i].value = val;
@@ -200,7 +200,7 @@ void fs_write(char *name, int val) {
   safe_print("\n");
 }
 
-int fs_read(char *name) {
+int ram_fs_read(char *name) {
   for (int i = 0; i < MAX_FILES; i++) {
     if (ramdisk[i].used && strcmp(ramdisk[i].name, name) == 0) {
       return ramdisk[i].value;
@@ -209,7 +209,7 @@ int fs_read(char *name) {
   return -1; // File not found
 }
 
-void fs_ls() {
+void ram_fs_ls() {
   safe_print("==== RAM Disk Files ====\n");
   for (int i = 0; i < MAX_FILES; i++) {
     if (ramdisk[i].used) {

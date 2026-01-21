@@ -1,8 +1,9 @@
 #include "ghost.h"
 
+#define VIC_INTENABLE ((volatile unsigned int *)0x10140010)
+
 volatile unsigned int *const TIMER0_LOAD = (unsigned int *)0x101E2000;
 volatile unsigned int *const TIMER0_CONTROL = (unsigned int *)0x101E2008;
-volatile unsigned int *const VIC_INTENABLE = (unsigned int *)0x10140010;
 
 tcb_t task1, task2, shell_task;
 

@@ -5,7 +5,7 @@ OBJCOPY = arm-none-eabi-objcopy
 CFLAGS = -g -mcpu=arm926ej-s -ffreestanding -Wall -Wextra
 LDFLAGS = -T linker.ld
 
-OBJS = startup.o kernel.o shell.o lib.o mm.o console.o tetris.o main.o
+OBJS = startup.o kernel.o shell.o lib.o mm.o console.o tetris.o flash.o main.o
 TARGET = ghost-arm
 
 all: $(TARGET).bin
@@ -24,3 +24,6 @@ $(TARGET).axf: $(OBJS)
 
 clean:
 	rm -f *.o *.axf *.bin
+
+run: ghost-arm.axf
+	qemu-system-arm -M versatilepb -m 128M -kernel ghost-arm.axf -drive if=pflash,format=raw,file=flash.bin -nographic

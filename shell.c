@@ -1,5 +1,9 @@
 #include "ghost.h"
 
+extern void fs_save_score(int score);
+extern int fs_load_score();
+extern void fs_ls();
+
 void shell_func() {
   char c;
   char cmd_buf[15];
@@ -34,21 +38,18 @@ void shell_func() {
         } else if (strcmp(cmd_buf, "ls") == 0) {
           fs_ls();
         } else if (strcmp(cmd_buf, "format") == 0) {
-          fs_init();
+          ram_fs_init();
           safe_print("RAM Disk formatted.\n");
         } else if (strcmp(cmd_buf, "score") == 0) {
-          int val = fs_read("score");
-          if (val == -1) {
-            safe_print("No score record found.\n");
-          } else {
-            safe_print("Your TETRIS score: ");
-            safe_print_dec(val);
-            safe_print("\n");
-          }
+          int val = fs_load_score();
+          safe_print("Your TETRIS score: ");
+          safe_print_dec(val);
+          safe_print("\n");
+
         } else if (cmd_buf[0] == 's' && cmd_buf[1] == 'a' &&
                    cmd_buf[2] == 'v' && cmd_buf[3] == 'e') {
           int val = atoi(&cmd_buf[5]);
-          fs_write("score", val);
+          fs_save_score(val);
           safe_print("Score saved: ");
           safe_print_dec(val);
           safe_print("\n");
@@ -179,7 +180,7 @@ void shell_func() {
           }
         } else if (cmd_buf[0] == 'k' && cmd_buf[1] == 'i' &&
                    cmd_buf[2] == 'l' && cmd_buf[3] == 'l') {
-          int target_pid = atoi(&cmd_buf[5]);
+          unsigned int target_pid = atoi(&cmd_buf[5]);
           int found = 0;
 
           for (int i = 0; i < task_cnt; i++) {
@@ -203,7 +204,7 @@ void shell_func() {
           }
         } else if (cmd_buf[0] == 's' && cmd_buf[1] == 't' &&
                    cmd_buf[2] == 'o' && cmd_buf[3] == 'p') {
-          int target_pid = atoi(&cmd_buf[5]);
+          unsigned int target_pid = atoi(&cmd_buf[5]);
           int found = 0;
 
           for (int i = 0; i < task_cnt; i++) {
@@ -236,7 +237,7 @@ void shell_func() {
         } else if (cmd_buf[0] == 'r' && cmd_buf[1] == 'e' &&
                    cmd_buf[2] == 's' && cmd_buf[3] == 'u' &&
                    cmd_buf[4] == 'm' && cmd_buf[5] == 'e') {
-          int target_pid = atoi(&cmd_buf[7]);
+          unsigned int target_pid = atoi(&cmd_buf[7]);
           int found = 0;
 
           for (int i = 0; i < task_cnt; i++) {

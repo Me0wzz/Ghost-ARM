@@ -3,6 +3,9 @@
 #define BOARD_W 10
 #define BOARD_H 20
 
+extern void fs_save_score(int score);
+extern int fs_load_score();
+
 int board[BOARD_H][BOARD_W];
 int px = 3, py = 0, shape = 0;
 int score = 0;
@@ -165,7 +168,7 @@ void tetris_main() {
   px = 3;
   py = 0;
   shape = 0;
-  int saved = fs_read("best_score");
+  int saved = fs_load_score();
   if (saved != -1) {
     best_score = saved;
   }
@@ -275,7 +278,7 @@ game_end:
   // current_task->state = STATE_DEAD;
   if (score > best_score) {
     best_score = score;
-    fs_write("best_score", best_score);
+    fs_save_score(best_score);
   }
   safe_print("Game Over! Your Score: ");
   safe_print_dec(score);

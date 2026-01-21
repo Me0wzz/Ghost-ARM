@@ -67,6 +67,11 @@ void sleep(unsigned int seconds);
 void task_init(tcb_t *task, void (*func)(), int id, int prior);
 int task_create(void (*entry)(), int priority);
 
+void ram_fs_init();
+int ram_fs_read(char *name);
+void ram_fs_write(char *name, int val);
+void ram_fs_ls();
+
 // shell.c
 void shell_func();
 

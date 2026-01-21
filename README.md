@@ -46,6 +46,9 @@ This project implements preemptive multi-tasking, a priority-based scheduler, dy
 ├── shell.c      # Shell interface and command parsing
 ├── mm.c         # Memory Manager (malloc/free)
 ├── lib.c        # String utilities and hardware I/O helpers
+├── flash.c/h    # Simple Flash memory disk file system
+├── console.c    # ANSI terminal control and screen handling
+├── tetris.c     # Tetris game implementation
 ├── startup.s    # Startup, IVT, and Assembly interrupt handlers
 ├── linker.ld    # Linker script for memory layout
 └── Makefile     # Build script
@@ -61,13 +64,14 @@ This project implements preemptive multi-tasking, a priority-based scheduler, dy
 
 ### Build
 ```bash
+dd if=/dev/zero of=flash.bin bs=1M count=64
 make clean && make
 # Cleans previous build and compiles ghost-arm.axf
 ```
 
 ### Run
 ```bash
-qemu-system-arm -M versatilepb -m 128M -nographic -kernel ./ghost-arm.axf
+make run
 ```
 
 ---
