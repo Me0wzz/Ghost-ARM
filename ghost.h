@@ -56,6 +56,7 @@ extern tcb_t initial_task;
 // lib.c
 unsigned int atoi(const char *str);
 int strcmp(const char *s1, const char *s2);
+void strcpy(char *dest, const char *src);
 void safe_print(const char *s);
 void safe_print_dec(unsigned int num);
 void putc_uart0(char c);
@@ -66,11 +67,6 @@ void schedule();
 void sleep(unsigned int seconds);
 void task_init(tcb_t *task, void (*func)(), int id, int prior);
 int task_create(void (*entry)(), int priority);
-
-void ram_fs_init();
-int ram_fs_read(char *name);
-void ram_fs_write(char *name, int val);
-void ram_fs_ls();
 
 // shell.c
 void shell_func();

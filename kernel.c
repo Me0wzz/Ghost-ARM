@@ -1,17 +1,8 @@
 #include "ghost.h"
 
-#define MAX_FILES 10
 #define MAX_FILENAME_LEN 20
 
 volatile unsigned int system_uptime = 0;
-
-typedef struct {
-  char name[MAX_FILENAME_LEN]; // File name
-  int value;                   // Simple integer value to store
-  int used;                    // 1 if the file is used, 0 otherwise
-} file_t;
-
-file_t ramdisk[MAX_FILES];
 
 tcb_t initial_task;
 tcb_t *current_task;
@@ -66,7 +57,6 @@ int task_create(void (*entry)(), int priority) {
   stack_top--;
   *stack_top = (unsigned int)entry;
 
-  // (2) R0 ~ R12 레지스터 저장 (0으로 초기화)
   for (int i = 0; i < 13; i++) {
     stack_top--;
     *stack_top = 0;
@@ -159,65 +149,4 @@ void c_data_handler() {
   safe_print("Data Abort!\n");
   while (1)
     ;
-}
-
-void ram_fs_init() {
-  for (int i = 0; i < MAX_FILENAME_LEN; i++) {
-    ramdisk[i].used = 0;
-    ramdisk[i].value = 0;
-    for (int j = 0; j < MAX_FILENAME_LEN; j++)
-      ramdisk[i].name[j] = 0;
-  }
-}
-
-void ram_fs_write(char *name, int val) {
-  for (int i = 0; i < MAX_FILES; i++) {
-    if (ramdisk[i].used && strcmp(ramdisk[i].name, name) == 0) {
-      ramdisk[i].value = val;
-      safe_print("Updated file: ");
-      safe_print(name);
-      safe_print("\n");
-      return;
-    }
-  }
-  for (int i = 0; i < MAX_FILES; i++) {
-    if (!ramdisk[i].used) {
-      ramdisk[i].used = 1;
-      ramdisk[i].value = val;
-      for (int j = 0; j < MAX_FILENAME_LEN; j++) {
-        ramdisk[i].name[j] = name[j];
-        if (name[j] == '\0')
-          break;
-      }
-      safe_print("Created file: ");
-      safe_print(name);
-      safe_print("\n");
-      return;
-    }
-  }
-  safe_print("RAM Disk Full! Cannot create file: ");
-  safe_print(name);
-  safe_print("\n");
-}
-
-int ram_fs_read(char *name) {
-  for (int i = 0; i < MAX_FILES; i++) {
-    if (ramdisk[i].used && strcmp(ramdisk[i].name, name) == 0) {
-      return ramdisk[i].value;
-    }
-  }
-  return -1; // File not found
-}
-
-void ram_fs_ls() {
-  safe_print("==== RAM Disk Files ====\n");
-  for (int i = 0; i < MAX_FILES; i++) {
-    if (ramdisk[i].used) {
-      safe_print(ramdisk[i].name);
-      safe_print(": ");
-      safe_print_dec(ramdisk[i].value);
-      safe_print("\n");
-    }
-  }
-  safe_print("========================\n");
 }

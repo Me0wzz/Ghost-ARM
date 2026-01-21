@@ -23,7 +23,7 @@ $(TARGET).axf: $(OBJS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f *.o *.axf *.bin
+	rm -f *.o *.elf *.axf ghost.bin
 
 run: ghost-arm.axf
 	qemu-system-arm -M versatilepb -m 128M -kernel ghost-arm.axf -drive if=pflash,format=raw,file=flash.bin -nographic

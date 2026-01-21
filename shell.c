@@ -1,8 +1,5 @@
+#include "flash.h"
 #include "ghost.h"
-
-extern void fs_save_score(int score);
-extern int fs_load_score();
-extern void fs_ls();
 
 void shell_func() {
   char c;
@@ -31,6 +28,10 @@ void shell_func() {
           safe_print(
               "sleep <seconds> - Sleep the shell for specified seconds\n");
           safe_print("tetris - Start TETRIS game\n");
+          safe_print("format - Format the flash storage\n");
+          safe_print("ls - List files in flash storage\n");
+          safe_print("save <name> <text> - Save text to a file\n");
+          safe_print("load <name> - Load and display a file's content\n");
         } else if (strcmp(cmd_buf, "whoami") == 0) {
           safe_print("You are user 'ghost'\n");
         } else if (strcmp(cmd_buf, "clear") == 0) {
@@ -38,8 +39,8 @@ void shell_func() {
         } else if (strcmp(cmd_buf, "ls") == 0) {
           fs_ls();
         } else if (strcmp(cmd_buf, "format") == 0) {
-          ram_fs_init();
-          safe_print("RAM Disk formatted.\n");
+          fs_format();
+          safe_print("Disk formatted.\n");
         } else if (strcmp(cmd_buf, "score") == 0) {
           int val = fs_load_score();
           safe_print("Your TETRIS score: ");
@@ -48,12 +49,50 @@ void shell_func() {
 
         } else if (cmd_buf[0] == 's' && cmd_buf[1] == 'a' &&
                    cmd_buf[2] == 'v' && cmd_buf[3] == 'e') {
-          int val = atoi(&cmd_buf[5]);
-          fs_save_score(val);
-          safe_print("Score saved: ");
-          safe_print_dec(val);
-          safe_print("\n");
-        } else if (strcmp(cmd_buf, "tetris") == 0) {
+          char name[16];
+          char content[32];
+
+          int i = 5;
+          int j = 0;
+          while (cmd_buf[i] != ' ' && cmd_buf[i] != 0 && j < 15) {
+            name[j++] = cmd_buf[i++];
+          }
+          name[j] = 0;
+          if (cmd_buf[i] == ' ') {
+            i++;
+            int k = 0;
+            while (cmd_buf[i] != 0 && k < 31) {
+              content[k++] = cmd_buf[i++];
+            }
+            content[k] = 0;
+            fs_save_file(name, content, k + 1);
+
+          } else {
+            safe_print("Usage: save <name> <text>\n");
+          }
+
+        } else if (cmd_buf[0] == 'l' && cmd_buf[1] == 'o' &&
+                   cmd_buf[2] == 'a' && cmd_buf[3] == 'd') {
+          char name[16];
+          int i = 5;
+          int j = 0;
+          while (cmd_buf[i] != 0 && j < 15)
+            name[j++] = cmd_buf[i++];
+          name[j] = 0;
+          char buf[100];
+          int len = fs_load_file(name, buf, 100);
+          if (len != -1) {
+            safe_print("Content: [");
+            safe_print(name);
+            safe_print(": ");
+            safe_print(buf);
+            safe_print("]\n");
+          } else {
+            safe_print("File not found.\n");
+          }
+        }
+
+        else if (strcmp(cmd_buf, "tetris") == 0) {
           safe_print("Starting TETRIS...\n");
 
           tetris_main();
