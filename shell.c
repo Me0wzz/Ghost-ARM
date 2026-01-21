@@ -31,6 +31,27 @@ void shell_func() {
           safe_print("You are user 'ghost'\n");
         } else if (strcmp(cmd_buf, "clear") == 0) {
           clrscr();
+        } else if (strcmp(cmd_buf, "ls") == 0) {
+          fs_ls();
+        } else if (strcmp(cmd_buf, "format") == 0) {
+          fs_init();
+          safe_print("RAM Disk formatted.\n");
+        } else if (strcmp(cmd_buf, "score") == 0) {
+          int val = fs_read("score");
+          if (val == -1) {
+            safe_print("No score record found.\n");
+          } else {
+            safe_print("Your TETRIS score: ");
+            safe_print_dec(val);
+            safe_print("\n");
+          }
+        } else if (cmd_buf[0] == 's' && cmd_buf[1] == 'a' &&
+                   cmd_buf[2] == 'v' && cmd_buf[3] == 'e') {
+          int val = atoi(&cmd_buf[5]);
+          fs_write("score", val);
+          safe_print("Score saved: ");
+          safe_print_dec(val);
+          safe_print("\n");
         } else if (strcmp(cmd_buf, "tetris") == 0) {
           safe_print("Starting TETRIS...\n");
 
