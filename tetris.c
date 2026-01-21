@@ -6,6 +6,7 @@
 int board[BOARD_H][BOARD_W];
 int px = 3, py = 0, shape = 0;
 int score = 0;
+int best_score = 0;
 
 char current_block[4][4];
 
@@ -41,11 +42,15 @@ int detect_collision(int px, int py, char block[4][4]) {
 
 void draw_ui() {
   gotoxy(45, 5);
-  safe_print("====== SCORE ======");
+  safe_print("====== SCORE / BEST SCORE ======");
   gotoxy(45, 7);
-  safe_print("      ");
+  safe_print("          ");
   safe_print_dec(score);
-  safe_print("      ");
+  safe_print(" / ");
+  safe_print_dec(best_score);
+  safe_print("          ");
+  gotoxy(45, 9);
+
   gotoxy(45, 11);
   safe_print("Space : Drop");
   gotoxy(45, 12);
@@ -156,6 +161,14 @@ void redraw() {
 }
 
 void tetris_main() {
+  score = 0;
+  px = 3;
+  py = 0;
+  shape = 0;
+  int saved = fs_read("best_score");
+  if (saved != -1) {
+    best_score = saved;
+  }
   enter_gui_mode();
   draw_background();
   draw_ui();
@@ -254,10 +267,20 @@ void tetris_main() {
     }
   }
 game_end:
+
   exit_gui_mode();
   for (volatile int i = 0; i < 3000000; i++)
     ;
 
   // current_task->state = STATE_DEAD;
+  if (score > best_score) {
+    best_score = score;
+    fs_write("best_score", best_score);
+  }
+  safe_print("Game Over! Your Score: ");
+  safe_print_dec(score);
+  safe_print("\nBest Score: ");
+  safe_print_dec(best_score);
+  safe_print("\n");
   return;
 }
