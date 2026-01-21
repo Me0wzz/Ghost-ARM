@@ -25,9 +25,26 @@ This project implements preemptive multi-tasking, a priority-based scheduler, dy
     * `resume <pid>`: Resume a suspended process.
     * `sleep <sec>`: Put the shell to sleep for N seconds (non-blocking for background tasks).
 * **System Info:** `uptime`, `memtest`, `whoami`.
+* **ANSI Terminal Control:** Clear screen and cursor positioning.
+* **File System Commands:** `format`, `ls`, `save`, `load` for Flash memory file operations.
 * **Concurrency Handling:** Atomic I/O operations with Critical Section Protection using `disable_irq` / `enable_irq`.
+* **Built-in Tetris Game:** Launchable Colorful Tetris game within the shell.
 
-### 4. Hardware Abstraction
+### 4. Built-in Tetris Game (`tetris.c`)
+* **Graphical Interface:** ANSI terminal control for rendering the game board.
+* **Game Logic:** Piece rotation, line clearing, scoring system.
+* **Persistent High Score:** Saves and loads the best score from Flash memory.
+
+### 5. Flash Memory File System (`flash.c/h`)
+* **Simple File Storage:** Save and load files to/from Flash memory.
+* **File Management Commands:**
+    * `format`: Format the Flash storage.
+    * `ls`: List files stored in Flash.
+    * `save <name> <text>`: Save text data to a file.
+    * `load <name>`: Load and display file content.
+* **File Structure:** Basic file header with name, size, and offset management.
+
+### 6. Hardware Abstraction
 * **Target Architecture:** ARMv5TE (ARM926EJ-S) via QEMU VersatilePB.
 * **Drivers:**
     * **UART0 (PL011):** Serial communication.
@@ -61,17 +78,13 @@ This project implements preemptive multi-tasking, a priority-based scheduler, dy
 ### Prerequisites
 * `arm-none-eabi-gcc` toolchain
 * `qemu-system-arm`
+*  ``` dd if=/dev/zero of=flash.bin bs=1M count=64 ``` 
+to create a 64MB flash image.
 
-### Build
+### Build & run
 ```bash
-dd if=/dev/zero of=flash.bin bs=1M count=64
-make clean && make
 # Cleans previous build and compiles ghost-arm.axf
-```
-
-### Run
-```bash
-make run
+make clean && make run
 ```
 
 ---
@@ -89,6 +102,12 @@ make run
 | `memtest` | Test dynamic memory allocation (malloc/free) |
 | `uptime` | Show system uptime in seconds |
 | `clear` | Clear the terminal screen |
+| `whoami` | Display current user information |
+| `tetris` | Start the TETRIS game |
+| `format` | Format the flash storage |
+| `ls` | List files in flash storage |
+| `save <name> <text>` | Save text to a file in flash storage |
+| `load <name>` | Load and display a file's content from flash storage |
 
 ---
 
@@ -96,5 +115,4 @@ make run
 
 * [ ] Implement **IPC (Inter-Process Communication)** via Message Queues.
 * [ ] Dynamic Task Spawning (`spawn` command).
-* [ ] File System support (Simple RAM Disk).
 * [ ] User Mode separation (currently runs in SVC mode).
