@@ -41,13 +41,7 @@ void shell_func() {
         } else if (strcmp(cmd_buf, "format") == 0) {
           fs_format();
           safe_print("Disk formatted.\n");
-        } else if (strcmp(cmd_buf, "score") == 0) {
-          int val = fs_load_score();
-          safe_print("Your TETRIS score: ");
-          safe_print_dec(val);
-          safe_print("\n");
-
-        } else if (cmd_buf[0] == 's' && cmd_buf[1] == 'a' &&
+        }  else if (cmd_buf[0] == 's' && cmd_buf[1] == 'a' &&
                    cmd_buf[2] == 'v' && cmd_buf[3] == 'e') {
           char name[16];
           char content[32];

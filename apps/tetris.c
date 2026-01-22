@@ -1,4 +1,5 @@
 #include "ghost.h"
+#include "flash.h"
 
 #define BOARD_W 10
 #define BOARD_H 20

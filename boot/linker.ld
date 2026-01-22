@@ -4,7 +4,7 @@ SECTIONS
     /* QEMU ARM start address */
     . = 0x10000;
     /* Code and Constants */
-    .startup : { startup.o(.text) }
+    .startup : { *startup.o(.text) }
     .text : { *(.text) }
     .rodata : { *(.rodata) }
     /* Data and BSS */

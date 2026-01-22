@@ -2,28 +2,48 @@ CC = arm-none-eabi-gcc
 LD = arm-none-eabi-ld
 OBJCOPY = arm-none-eabi-objcopy
 
-CFLAGS = -g -mcpu=arm926ej-s -ffreestanding -Wall -Wextra
-LDFLAGS = -T linker.ld
+CFLAGS = -g -mcpu=arm926ej-s -ffreestanding -Wall -Wextra -Iinclude -c
+LDFLAGS = -T boot/linker.ld
 
-OBJS = startup.o kernel.o shell.o lib.o mm.o console.o tetris.o flash.o main.o
+SRC_DIRS = boot kernel drivers lib apps
+C_SRCS = $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c))
+ASM_SRCS = $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.s))
+
+OBJS = $(addprefix build/, $(notdir $(C_SRCS:.c=.o))) \
+	$(addprefix build/, $(notdir $(ASM_SRCS:.s=.o)))
+
+$(OBJS): | build_dir
+
 TARGET = ghost-arm
 
-all: $(TARGET).bin
+all: build_dir $(TARGET).axf
 
-$(TARGET).bin: $(TARGET).axf
-	$(OBJCOPY) -O binary $< $@
+build_dir:
+	@mkdir -p build
 
-$(TARGET).axf: $(OBJS)
+$(TARGET).axf: build/$(TARGET).axf
+	cp $< $@
+	@echo ">>> ELF File Generated: $@"
+
+build/$(TARGET).axf: $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $^
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+build/%.o: kernel/%.c
+	$(CC) $(CFLAGS) -o $@ $<
+build/%.o: drivers/%.c
+	$(CC) $(CFLAGS) -o $@ $<
+build/%.o: lib/%.c
+	$(CC) $(CFLAGS) -o $@ $<
+build/%.o: apps/%.c
+	$(CC) $(CFLAGS) -o $@ $<
+build/%.o: boot/%.s
+	$(CC) $(CFLAGS) -o $@ $<
 
-%.o: %.s
-	$(CC) $(CFLAGS) -c -o $@ $<
+ 
 
 clean:
-	rm -f *.o *.elf *.axf ghost.bin
+	rm -rf build $(TARGET).axf
 
-run: ghost-arm.axf
-	qemu-system-arm -M versatilepb -m 128M -kernel ghost-arm.axf -drive if=pflash,format=raw,file=flash.bin -nographic
+
+run: $(TARGET).axf
+	qemu-system-arm -M versatilepb -m 128M -kernel $(TARGET).axf -drive if=pflash,format=raw,file=flash.bin -nographic
